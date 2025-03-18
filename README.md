@@ -1,7 +1,5 @@
-# Fivem-Proxy-Install.sh
+# Fivem-Proxy
 Handy script to install nginx as a proxy for your FiveM/RedM server.
-
-
 
 ## Requirements
 - Debian linux distribution (Tested on debian 10/11/12) - minimal only (not a self installed variant)
@@ -10,15 +8,13 @@ Handy script to install nginx as a proxy for your FiveM/RedM server.
 - A FiveM/RedM server
 
 ## Installation
-1. clone this repo
+1. Clone this repo
 2. Make it executable: `chmod +x fivem-nginx-proxy-install.sh`
 3. Run it: `./fivem-nginx-proxy-install.sh`
 
 ## Usage
 1. Follow the instructions
 2. Append the following into your sv.cfg
-
-
 3. Enjoy your new proxy!
 
 ## Common issue on debian 12 and ubuntu 20.04
