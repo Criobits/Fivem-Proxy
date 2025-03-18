@@ -69,9 +69,10 @@ if [ "$ssl" == "y" ]; then
 fi
 
 # Download Nginx configuration files
-wget https://github.com/MathiAs2Pique/Fivem-Proxy-Install.sh/raw/main/files/nginx.conf -O /etc/nginx/nginx.conf 
-wget https://github.com/MathiAs2Pique/Fivem-Proxy-Install.sh/raw/main/files/stream.conf -O /etc/nginx/stream.conf 
-wget https://github.com/MathiAs2Pique/Fivem-Proxy-Install.sh/raw/main/files/web.conf -O /etc/nginx/web.conf 
+wget https://raw.githubusercontent.com/Criobits/Fivem-Proxy-Install.sh/refs/heads/main/files/nginx.conf -O /etc/nginx/nginx.conf 
+wget https://raw.githubusercontent.com/Criobits/Fivem-Proxy-Install.sh/refs/heads/main/files/stream.conf -O /etc/nginx/stream.conf 
+wget https://raw.githubusercontent.com/Criobits/Fivem-Proxy-Install.sh/refs/heads/main/files/web.conf -O /etc/nginx/web.conf 
+wget https://raw.githubusercontent.com/Criobits/Fivem-Proxy-Install.sh/refs/heads/main/files/cloudflare.conf -O /etc/nginx/cloudflare.conf 
 
 # Replace placeholders in conf files
 sed -i "s/ip_goes_here/$ip/g" /etc/nginx/nginx.conf
