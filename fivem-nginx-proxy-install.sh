@@ -24,14 +24,12 @@ install_nginx() {
             echo "deb-src http://nginx.org/packages/mainline/debian/ $OS_CODENAME nginx" | tee -a /etc/apt/sources.list.d/nginx.list
             wget -qO - http://nginx.org/keys/nginx_signing.key | apt-key add -
             ;;
-
         centos|fedora|rhel)
             yum install -y epel-release
             yum-config-manager --add-repo http://nginx.org/packages/mainline/centos/7/x86_64/
             wget -qO - http://nginx.org/keys/nginx_signing.key | rpm --import -
             ;;
         *)
-            # Unknown os :(
             echo "Unsupported OS: $1"
             exit 1
             ;;
@@ -57,8 +55,8 @@ read -p "Domain Name: " domain
 echo "Do you want to auto-generate an SSL certificate? (y/n)"
 read -p "Auto Generate SSL: " ssl
 if [ "$ssl" == "y" ]; then
-echo "Please specify your e-mail address to associate with the certificate"
-read -p "Your Email: " cert
+    echo "Please specify your e-mail address to associate with the certificate"
+    read -p "Your Email: " cert
 fi
 
 # Install certbot for SSL (if needed)
@@ -85,10 +83,8 @@ if [ "$ssl" == "y" ]; then
     echo -e "\nGenerating SSL certificate..."
     systemctl stop nginx
     certbot certonly --nginx -d $domain --non-interactive --agree-tos --email $cert
-    # Copy certificate files
     cp /etc/letsencrypt/live/$domain/fullchain.pem /etc/nginx/ssl/fullchain.pem
     cp /etc/letsencrypt/live/$domain/privkey.pem /etc/nginx/ssl/privkey.pem
-    # Adjust web.conf for SSL
     sed -i "s/listen 80;/listen 443 ssl http2;/g" /etc/nginx/web.conf
     sed -i "s/# ssl_certificate/ssl_certificate/g" /etc/nginx/web.conf
     sed -i "s/# ssl_certificate_key/ssl_certificate_key/g" /etc/nginx/web.conf
@@ -102,8 +98,8 @@ echo "Check out the server.cfg on the repo to see how to configure your server."
 
 # Ad for my project
 echo -e "\n\n\e[35m"
-echo "If you want a realiable DDoS protection for your server"
-echo "To get the msot out of your server and to protect it from DDoS attacks"
+echo "If you want a reliable DDoS protection for your server"
+echo "To get the most out of your server and to protect it from DDoS attacks"
 echo "Check out PurpleMaze, the most advanced algorithmic-based DDoS protection"
 echo -e "\e[31m"
 echo "https://purplemaze.net"
