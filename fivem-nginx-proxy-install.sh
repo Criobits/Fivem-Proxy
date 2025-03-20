@@ -20,8 +20,8 @@ install_nginx() {
             apt-get update
             apt-get install -y gnupg2 lsb-release software-properties-common
             OS_CODENAME=$(lsb_release -cs)
-            echo "deb http://nginx.org/packages/mainline/debian/ $OS_CODENAME nginx" | tee /etc/apt/sources.list.d/nginx.list
-            echo "deb-src http://nginx.org/packages/mainline/debian/ $OS_CODENAME nginx" | tee -a /etc/apt/sources.list.d/nginx.list
+            echo "deb http://nginx.org/packages/mainline/ubuntu/ $OS_CODENAME nginx" | tee /etc/apt/sources.list.d/nginx.list
+            echo "deb-src http://nginx.org/packages/mainline/ubuntu/ $OS_CODENAME nginx" | tee -a /etc/apt/sources.list.d/nginx.list
             wget -qO - http://nginx.org/keys/nginx_signing.key | apt-key add -
             ;;
         centos|fedora|rhel)
