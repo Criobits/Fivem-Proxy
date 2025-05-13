@@ -7,104 +7,83 @@ if [ -f /etc/os-release ]; then
     OS=$ID
 fi
 
-# root ?
+# Must be root
 if [ "$(id -u)" != "0" ]; then
-    echo "This script must be run as root" 1>&2
+    echo "This script must be run as root" >&2
     exit 1
 fi
 
 # Install nginx
 install_nginx() {
-    case $1 in
+    case "$1" in
         debian|ubuntu)
             apt-get update
-            apt-get install -y gnupg2 lsb-release software-properties-common
+            apt-get install -y gnupg2 lsb-release software-properties-common wget
             OS_CODENAME=$(lsb_release -cs)
-            echo "deb http://nginx.org/packages/mainline/ubuntu/ $OS_CODENAME nginx" | tee /etc/apt/sources.list.d/nginx.list
-            echo "deb-src http://nginx.org/packages/mainline/ubuntu/ $OS_CODENAME nginx" | tee -a /etc/apt/sources.list.d/nginx.list
+            echo "deb http://nginx.org/packages/mainline/ubuntu/ $OS_CODENAME nginx" \
+                > /etc/apt/sources.list.d/nginx.list
+            echo "deb-src http://nginx.org/packages/mainline/ubuntu/ $OS_CODENAME nginx" \
+                >> /etc/apt/sources.list.d/nginx.list
             wget -qO - http://nginx.org/keys/nginx_signing.key | apt-key add -
+            apt-get update
+            apt-get install -y nginx
             ;;
         centos|fedora|rhel)
-            yum install -y epel-release
+            yum install -y epel-release yum-utils wget
             yum-config-manager --add-repo http://nginx.org/packages/mainline/centos/7/x86_64/
             wget -qO - http://nginx.org/keys/nginx_signing.key | rpm --import -
+            yum install -y nginx
             ;;
         *)
-            echo "Unsupported OS: $1"
+            echo "Unsupported OS: $1" >&2
             exit 1
             ;;
     esac
 
-    apt-get update || yum update
-    apt-get install -y nginx || yum install -y nginx
     systemctl enable nginx
     systemctl start nginx
 }
 
-install_nginx $OS
+install_nginx "$OS"
 
-# Clear previous Nginx configurations
+# Remove old configs and SSL dir (not needed)
 rm -rf /etc/nginx/conf.d
-mkdir -p /etc/nginx/ssl
+rm -rf /etc/nginx/ssl 2>/dev/null
 
-# Inputs
-echo -e "\nPlease enter the IP address (with the port) of your server (Ex: 1.1.1.1:30120)"
-read -p "IP Address: " ip
-echo "Please enter the domain name of your server (Ex: play.myserver.com)"
-read -p "Domain Name: " domain
-echo "Do you want to auto-generate an SSL certificate? (y/n)"
-read -p "Auto Generate SSL: " ssl
-if [ "$ssl" == "y" ]; then
-    echo "Please specify your e-mail address to associate with the certificate"
-    read -p "Your Email: " cert
-fi
+# Ask for backend IP and HTTP domain
+read -rp "Enter your game server IP (e.g. 1.2.3.4): " SERVER_IP
+read -rp "Enter your HTTP domain (e.g. play.example.com): " DOMAIN
 
-# Install certbot for SSL (if needed)
-if [ "$ssl" == "y" ]; then
-    if [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
-        apt-get install -y python3-certbot-nginx 
-    elif [ "$OS" == "centos" ] || [ "$OS" == "fedora" ] || [ "$OS" == "rhel" ]; then
-        yum install -y certbot-nginx 
-    fi
-fi
+# Download fresh configs
+wget -q \
+  https://raw.githubusercontent.com/Criobits/Fivem-Proxy/refs/heads/main/files/nginx.conf \
+  -O /etc/nginx/nginx.conf
 
-# Download Nginx configuration files
-wget https://raw.githubusercontent.com/Criobits/Fivem-Proxy/refs/heads/main/files/nginx.conf -O /etc/nginx/nginx.conf 
-wget https://raw.githubusercontent.com/Criobits/Fivem-Proxy/refs/heads/main/files/stream.conf -O /etc/nginx/stream.conf 
-wget https://raw.githubusercontent.com/Criobits/Fivem-Proxy/refs/heads/main/files/web.conf -O /etc/nginx/web.conf 
-wget https://raw.githubusercontent.com/Criobits/Fivem-Proxy/refs/heads/main/files/cloudflare.conf -O /etc/nginx/cloudflare.conf 
+wget -q \
+  https://raw.githubusercontent.com/Criobits/Fivem-Proxy/refs/heads/main/files/cloudflare.conf \
+  -O /etc/nginx/cloudflare.conf
 
-# Replace placeholders in conf files
-sed -i "s/ip_goes_here/$ip/g" /etc/nginx/nginx.conf
-sed -i "s/ip_goes_here/$ip/g" /etc/nginx/stream.conf
-sed -i "s/server_name_goes_here/$domain/g" /etc/nginx/web.conf
+wget -q \
+  https://raw.githubusercontent.com/Criobits/Fivem-Proxy/refs/heads/main/files/web.conf \
+  -O /etc/nginx/web.conf
 
-# Generate SSL certificate (if needed)
-if [ "$ssl" == "y" ]; then
-    echo -e "\nGenerating SSL certificate..."
-    systemctl stop nginx
-    certbot certonly --nginx -d $domain --non-interactive --agree-tos --email $cert
-    cp /etc/letsencrypt/live/$domain/fullchain.pem /etc/nginx/ssl/fullchain.pem
-    cp /etc/letsencrypt/live/$domain/privkey.pem /etc/nginx/ssl/privkey.pem
-    sed -i "s/listen 80;/listen 443 ssl http2;/g" /etc/nginx/web.conf
-    sed -i "s/# ssl_certificate/ssl_certificate/g" /etc/nginx/web.conf
-    sed -i "s/# ssl_certificate_key/ssl_certificate_key/g" /etc/nginx/web.conf
-fi
+wget -q \
+  https://raw.githubusercontent.com/Criobits/Fivem-Proxy/refs/heads/main/files/stream.conf \
+  -O /etc/nginx/stream.conf
 
-# Restart Nginx
-systemctl restart nginx 
+# Patch in your IP and domain
+sed -i "s/ip_goes_here/${SERVER_IP}/g" /etc/nginx/nginx.conf
+sed -i "s/server_name_goes_here/${DOMAIN}/g"   /etc/nginx/web.conf
+sed -i "s/ip_goes_here/${SERVER_IP}:30120/g"  /etc/nginx/stream.conf
 
-echo "Done! You can now connect to your server using connect https://$domain"
-echo "Check out the server.cfg on the repo to see how to configure your server."
+# Restart nginx to apply
+systemctl restart nginx
 
-# Ad for my project
-echo -e "\n\n\e[35m"
-echo "If you want a reliable DDoS protection for your server"
-echo "To get the most out of your server and to protect it from DDoS attacks"
-echo "Check out PurpleMaze, the most advanced algorithmic-based DDoS protection"
-echo -e "\e[31m"
-echo "https://purplemaze.net"
-echo "https://discord.gg/BMJJWjZafv"
-echo -e "\e[0m"
+echo
+echo "✅ nginx is now live!"
+echo "- HTTP on port 80 → http://${DOMAIN}"
+echo "- Game traffic on 30120 → ${SERVER_IP}:30120"
+echo
+
 
 exit 0
